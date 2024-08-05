@@ -1,5 +1,3 @@
-using System.Threading.Tasks;
-
 namespace Analytics
 {
     using System.Linq;
@@ -15,15 +13,15 @@ namespace Analytics
         private readonly string _delayedEventsPrefsKey = "DelayedEvents";
         private readonly string _eventTypeFieldName = "Type";
         private readonly string _eventDataFieldName = "Data";
-        
+
         [SerializeField] private string _url = string.Empty;
-        
+
         private Queue<EventData> _events = new Queue<EventData>();
         private IEnumerator _postRoutine;
         private bool _isCanSendEventData = true;
-        
+
         private float _cooldownBeforeSend => Random.Range(1f, 3f);
-        
+
         private void Awake()
         {
             TryLoad();
@@ -36,15 +34,17 @@ namespace Analytics
             Save();
         }
 
+#if UNITY_EDITOR
         [ContextMenu("Test request")]
-        public void TestEvent()
+        private void TestEvent()
         {
             for (int i = 0; i < 100; i++)
             {
                 TrackEvent(EventType.SpendCoins, "spendCoins");
             }
         }
-        
+#endif
+
         public void TrackEvent(EventType type, string data)
         {
             var eventData = new EventData(type, data);
@@ -75,30 +75,31 @@ namespace Analytics
         private bool TrySendEvent()
         {
             if (!_isCanSendEventData || _events.Count <= 0) return false;
-            
+
             _postRoutine = PostRoutine(_events.Peek(), CheckEventPostResult);
             StartCoroutine(_postRoutine);
             return true;
         }
-        
+
         private IEnumerator PostRoutine(EventData data, UnityAction<UnityWebRequest.Result> result)
         {
             _isCanSendEventData = false;
-            
+
             var dataPost = JsonUtility.ToJson(data, true);
             using UnityWebRequest request = UnityWebRequest.Post(_url, dataPost);
-            
+
             yield return request.SendWebRequest();
             result.Invoke(request.result);
-            
+
             yield return new WaitForSecondsRealtime(_cooldownBeforeSend);
             _isCanSendEventData = true;
         }
 
         private void CheckEventPostResult(UnityWebRequest.Result result)
         {
+#if UNITY_EDITOR
             Debug.Log($"Result: {result.ToString()}");
-            
+#endif
             if (result is UnityWebRequest.Result.Success)
                 _events.TryDequeue(out EventData data);
 
@@ -112,7 +113,7 @@ namespace Analytics
         LevelComplete,
         SpendCoins
     }
-    
+
     [System.Serializable]
     public class EventData
     {
