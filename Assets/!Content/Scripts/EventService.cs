@@ -11,8 +11,6 @@ namespace Analytics
     public class EventService : MonoBehaviour
     {
         private readonly string _delayedEventsPrefsKey = "DelayedEvents";
-        private readonly string _eventTypeFieldName = "Type";
-        private readonly string _eventDataFieldName = "Data";
 
         [SerializeField] private string _url = string.Empty;
 
